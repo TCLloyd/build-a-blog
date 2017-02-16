@@ -68,17 +68,32 @@ class NewPost(Handler):
 
         if not have_error:
 
-            blogs = Blogpost(title = new_blog_title, text = new_blog_body)
-            blogs.put()
+            blogpost = Blogpost(title = new_blog_title, text = new_blog_body)
+            blogpost.put()
 
-            self.redirect("/blog")
+            self.redirect("/blog/%s" % str(blogpost.key().id()))
         else:
             t = jinja_env.get_template("new-post.html")
             content = t.render(new_blog_title=new_blog_title, new_blog_body=new_blog_body, error=error)
             self.response.write(content)
 
+class ViewPostHandler(webapp2.RequestHandler):
+    def get(self, id):
+        blog_key = db.Key.from_path('Blogpost', int(id))
+        blog_post = db.get(blog_key)
+
+        if not blog_post:
+            self.error(404)
+            return
+
+        t=jinja_env.get_template("post.html")
+        content = t.render(blog_post = blog_post)
+        self.response.write(content)
+
+
 app = webapp2.WSGIApplication([
     ('/', Index),
     ('/blog', Blog),
-    ('/new-post', NewPost)
+    ('/new-post', NewPost),
+    webapp2.Route('/blog/<id:\d+>', ViewPostHandler)
 ], debug=True)

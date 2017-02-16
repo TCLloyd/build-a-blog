@@ -5,7 +5,7 @@
     {% for blogpost in blogs %}
         <p>
             <label>
-                {{ blogpost.title }}
+                <b><a href="/blog/{{blogpost.key().id()}}">{{ blogpost.title }}</a></b>
             </label>
             {{ blogpost.text }}
         </p>
