@@ -21,50 +21,64 @@ template_dir = os.path.join(os.path.dirname(__file__), "templates")
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir), autoescape = True)
 
 class Blogpost(db.Model):
-    title = db.StringProperty(required = True)
+    title = db.StringProperty()
     created = db.DateTimeProperty(auto_now_add = True)
-    text = db.TextProperty(required = True)
+    text = db.TextProperty()
 
 class Handler(webapp2.RequestHandler):
     def renderError(self, error_code):
         self.error(error_code)
         self.response.write("Something's wrong! Help!")
 
+class Index(Handler):
+    def get(self):
+        self.redirect("/blog")
+
 class Blog(Handler):
     def get(self):
-        blogs = db.GqlQuery("SELECT * FROM Blogpost ORDER BY created DESC")
+        blogs = db.GqlQuery("SELECT * FROM Blogpost ORDER BY created DESC LIMIT 5")
         t = jinja_env.get_template("main-blog.html")
         content = t.render(blogs = blogs)
         self.response.write(content)
 
 class NewPost(Handler):
-    def get(self):
+    def write_form(self, new_blog_title, new_blog_body, error):
         t = jinja_env.get_template("new-post.html")
         content = t.render()
         self.response.write(content)
 
+    def get(self):
+        self.write_form(new_blog_title="", new_blog_body="", error="")
+
     def post(self):
         new_blog_title = self.request.get("title")
         new_blog_body = self.request.get("text")
+        have_error = False
 
         if (not new_blog_title) or (new_blog_title.strip() == ""):
+            have_error = True
             error = "Please give your blog a title."
         else:
             error = ""
-            # self.redirect("/new-post?error=" + cgi.escape(error))
 
         if (not new_blog_body) or (new_blog_body.strip() == ""):
+            have_error = True
             error = "Please write something."
+
+
+        if not have_error:
+
+            blogs = Blogpost(title = new_blog_title, text = new_blog_body)
+            blogs.put()
+
+            self.redirect("/blog")
         else:
-            error = ""
-            # self.redirect("/new-post?error=" + cgi.escape(error))
-
-        blogs = Blogpost(title = new_blog_title, text = new_blog_body)
-        blogs.put()
-
-        self.redirect("/blog")
+            t = jinja_env.get_template("new-post.html")
+            content = t.render(new_blog_title=new_blog_title, new_blog_body=new_blog_body, error=error)
+            self.response.write(content)
 
 app = webapp2.WSGIApplication([
+    ('/', Index),
     ('/blog', Blog),
     ('/new-post', NewPost)
 ], debug=True)

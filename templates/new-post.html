@@ -11,8 +11,8 @@
         <div>Blog</div>
         <textarea name="text">{{ new_blog_body }}</textarea>
     </label>
-    <div class="error">{{ error if error else "" }}</div>
-    <input type="submit">
+    <div class="error">{{ error }}</div>
+    <input type="submit" value = "Submit">
 </form>
 
 {% endblock %}
